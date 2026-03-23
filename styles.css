@@ -1,0 +1,360 @@
+:root {
+  --bg: #f4efe6;
+  --ink: #1f252a;
+  --ink-muted: #4a555f;
+  --card: #fffdf8;
+  --primary: #0e7c7b;
+  --primary-dark: #0b5f5e;
+  --accent: #e76f51;
+  --accent-soft: #f9c9bc;
+  --outline: #dad1bf;
+  --shadow: 0 16px 45px rgba(40, 38, 30, 0.12);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: radial-gradient(circle at 20% 0%, #fff7e9 0%, var(--bg) 45%, #ece4d4 100%);
+  color: var(--ink);
+  font-family: "Bricolage Grotesque", sans-serif;
+  line-height: 1.45;
+  overflow-x: hidden;
+}
+
+.bg-shape {
+  position: fixed;
+  z-index: -1;
+  filter: blur(2px);
+}
+
+.bg-shape-a {
+  width: 280px;
+  height: 280px;
+  border-radius: 999px;
+  background: radial-gradient(circle, #f7b89e 0%, rgba(247, 184, 158, 0) 70%);
+  top: -60px;
+  right: -70px;
+}
+
+.bg-shape-b {
+  width: 320px;
+  height: 320px;
+  border-radius: 20% 80% 30% 70% / 40% 30% 70% 60%;
+  background: radial-gradient(circle, #7ccdc6 0%, rgba(124, 205, 198, 0) 70%);
+  bottom: -120px;
+  left: -100px;
+}
+
+.layout {
+  width: min(1120px, 94vw);
+  margin: 2rem auto 3.5rem;
+  display: grid;
+  gap: 1.2rem;
+}
+
+.game-shell {
+  display: grid;
+  grid-template-columns: 1.45fr 0.85fr;
+  gap: 1rem;
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--outline);
+  border-radius: 20px;
+  box-shadow: var(--shadow);
+  padding: 1.2rem;
+  animation: rise 420ms ease both;
+}
+
+.hero h1 {
+  margin: 0.2rem 0 0.6rem;
+  font-size: clamp(1.9rem, 3.2vw, 2.8rem);
+}
+
+.eyebrow {
+  display: inline-block;
+  background: #d7efe9;
+  color: #134847;
+  border-radius: 999px;
+  padding: 0.25rem 0.6rem;
+  font-size: 0.86rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+
+.panel-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.status-pill {
+  font-family: "Space Mono", monospace;
+  font-size: 0.82rem;
+  color: #163d3d;
+  background: #d5ece7;
+  border: 1px solid #bce2db;
+  border-radius: 999px;
+  padding: 0.28rem 0.56rem;
+}
+
+.score-grid {
+  margin-top: 0.5rem;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.7rem;
+}
+
+.score-grid-two-player {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.score-grid article {
+  border: 1px solid var(--outline);
+  border-radius: 14px;
+  padding: 0.6rem;
+  background: #fffcf5;
+}
+
+.score-grid h3 {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--ink-muted);
+}
+
+.score-value {
+  margin: 0.3rem 0 0;
+  font-size: 1.4rem;
+  font-weight: 800;
+}
+
+.dice-tray {
+  margin-top: 1rem;
+  min-height: 82px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  align-items: center;
+}
+
+.die {
+  width: 58px;
+  height: 58px;
+  border-radius: 13px;
+  border: 1px solid #d8d0bd;
+  background: linear-gradient(135deg, #fffef8 0%, #f9f1dd 100%);
+  display: grid;
+  place-items: center;
+  font-family: "Space Mono", monospace;
+  font-size: 1.25rem;
+  font-weight: 700;
+  transition: transform 180ms ease, border-color 180ms ease, background-color 180ms ease;
+  cursor: pointer;
+}
+
+.die:hover {
+  transform: translateY(-2px) rotate(-1deg);
+}
+
+.die-selected {
+  border-color: #0c6f6e;
+  background: linear-gradient(135deg, #dcfaf5 0%, #c7efe9 100%);
+}
+
+.die-blocked {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.die-cpu-turn {
+  border-color: #d7c7a6;
+}
+
+.button-row {
+  margin-top: 0.95rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.btn {
+  border: 1px solid transparent;
+  border-radius: 12px;
+  padding: 0.54rem 0.92rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 160ms ease, background-color 160ms ease, border-color 160ms ease;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.btn-primary {
+  background: var(--primary);
+  color: #f8fffe;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--primary-dark);
+}
+
+.btn-secondary {
+  background: var(--accent);
+  color: #2a120d;
+}
+
+.btn-ghost {
+  background: #faf5e8;
+  border-color: #d9ceb8;
+  color: #3f4a52;
+}
+
+.action-block {
+  margin-top: 1rem;
+}
+
+.hint {
+  margin-top: 0.15rem;
+  color: var(--ink-muted);
+}
+
+.actions-list {
+  margin-top: 0.6rem;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.action-item {
+  text-align: left;
+  padding: 0.56rem 0.68rem;
+  border-radius: 12px;
+  border: 1px solid #dccfb3;
+  background: #fff8e9;
+  color: #2f383f;
+  font-weight: 600;
+  margin: 0;
+}
+
+.action-item-active {
+  border-color: #0c6f6e;
+  background: #e4f6f3;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 420px;
+}
+
+th,
+td {
+  border-bottom: 1px solid #e7dcc6;
+  text-align: left;
+  padding: 0.55rem 0.45rem;
+}
+
+th {
+  font-size: 0.83rem;
+  color: var(--ink-muted);
+}
+
+.analysis-grid {
+  margin-top: 0.9rem;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.8rem;
+}
+
+.mini-card {
+  border: 1px solid #dccfb3;
+  border-radius: 14px;
+  background: #fff9ee;
+  padding: 0.75rem;
+}
+
+.scoring-condensed table {
+  min-width: 280px;
+}
+
+.scoring-condensed td,
+.scoring-condensed th {
+  padding: 0.45rem 0.4rem;
+  font-size: 0.88rem;
+}
+
+.scoring-best-choice {
+  margin-top: 0.8rem;
+}
+
+.row-active {
+  background: #eaf7f4;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 900px) {
+  .game-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .score-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .analysis-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 580px) {
+  .layout {
+    width: min(97vw, 1120px);
+    margin-top: 1rem;
+  }
+
+  .card {
+    border-radius: 15px;
+    padding: 0.95rem;
+  }
+
+  .button-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .die {
+    width: 50px;
+    height: 50px;
+    border-radius: 10px;
+  }
+
+  .analysis-grid {
+    grid-template-columns: 1fr;
+  }
+}
