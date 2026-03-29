@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://maxwellmetzner.github.io/Farkle/sitemap.xml

@@ -1,0 +1,17 @@
+{
+  "name": "Farkle Lab",
+  "short_name": "Farkle",
+  "description": "Play Farkle and analyze exact EV strategy.",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#f4efe6",
+  "theme_color": "#0e7c7b",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

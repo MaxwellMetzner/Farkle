@@ -55,6 +55,15 @@ const elements = {
   keepBtn: document.getElementById("keep-btn"),
   bankBtn: document.getElementById("bank-btn"),
   resetBtn: document.getElementById("reset-btn"),
+  advisorYourScore: document.getElementById("advisor-your-score"),
+  advisorOpponentScore: document.getElementById("advisor-opponent-score"),
+  advisorTargetScore: document.getElementById("advisor-target-score"),
+  advisorTurnTotal: document.getElementById("advisor-turn-total"),
+  advisorDiceRemaining: document.getElementById("advisor-dice-remaining"),
+  advisorOpponentsLastTurn: document.getElementById("advisor-opponents-last-turn"),
+  advisorRunBtn: document.getElementById("advisor-run-btn"),
+  advisorRecommendation: document.getElementById("advisor-recommendation"),
+  advisorDetails: document.getElementById("advisor-details"),
 };
 
 const evEngine = {
@@ -430,6 +439,90 @@ function buildExactEVTables() {
 
 function shouldRollForPureEV(n, t) {
   return getRollValue(n, t) > t;
+}
+
+function clamp(value, low, high) {
+  return Math.max(low, Math.min(high, value));
+}
+
+function toNonNegativeInt(value, fallback = 0) {
+  const parsed = Number.parseInt(value, 10);
+  if (!Number.isFinite(parsed) || parsed < 0) {
+    return fallback;
+  }
+  return parsed;
+}
+
+function computeStateRecommendation({
+  yourScore,
+  opponentScore,
+  targetScore,
+  turnTotal,
+  diceRemaining,
+  opponentsGetLastTurn,
+}) {
+  const rollEV = getRollValue(diceRemaining, turnTotal);
+  const bankEV = turnTotal;
+  const bankedScore = yourScore + turnTotal;
+
+  let action = rollEV > bankEV ? "ROLL" : "BANK";
+  let rationale =
+    action === "ROLL"
+      ? "Pure EV favors continuing this turn."
+      : "Pure EV favors locking in points now.";
+
+  if (bankedScore >= targetScore) {
+    action = "BANK";
+    rationale = opponentsGetLastTurn
+      ? "Banking reaches target now. Even with a final reply turn, this is the standard play."
+      : "Banking reaches target and ends the game immediately.";
+  } else if (opponentScore >= targetScore && bankedScore < opponentScore) {
+    action = "ROLL";
+    rationale = "Opponent has already reached target, so you must press for a bigger turn.";
+  } else if (opponentScore >= targetScore - 600 && bankedScore < opponentScore - 700 && turnTotal < 1400) {
+    action = "ROLL";
+    rationale =
+      "You are in late-game catch-up mode. Pressing improves comeback chances versus small banks.";
+  }
+
+  return {
+    action,
+    rationale,
+    rollEV,
+    bankEV,
+    bankedScore,
+  };
+}
+
+function runAdvisor() {
+  if (!evEngine.ready) {
+    elements.advisorRecommendation.textContent = "EV engine is still loading. Try again in a moment.";
+    elements.advisorDetails.textContent = "Roll EV: -, Bank EV: -";
+    return;
+  }
+
+  const yourScore = toNonNegativeInt(elements.advisorYourScore.value, 0);
+  const opponentScore = toNonNegativeInt(elements.advisorOpponentScore.value, 0);
+  const targetScore = clamp(toNonNegativeInt(elements.advisorTargetScore.value, TARGET_SCORE), 1000, 50000);
+  const turnTotal = toNonNegativeInt(elements.advisorTurnTotal.value, 0);
+  const diceRemaining = clamp(toNonNegativeInt(elements.advisorDiceRemaining.value, 6), 1, 6);
+  const opponentsGetLastTurn = Boolean(elements.advisorOpponentsLastTurn.checked);
+
+  const recommendation = computeStateRecommendation({
+    yourScore,
+    opponentScore,
+    targetScore,
+    turnTotal,
+    diceRemaining,
+    opponentsGetLastTurn,
+  });
+
+  elements.advisorRecommendation.innerHTML =
+    `Recommended action: <strong>${recommendation.action}</strong>. ${recommendation.rationale}`;
+
+  elements.advisorDetails.textContent =
+    `Roll EV: ${recommendation.rollEV.toFixed(2)} | Bank EV: ${recommendation.bankEV.toFixed(2)} | ` +
+    `Score if banked now: ${recommendation.bankedScore}`;
 }
 
 function findBestTargetRow(turnTotal) {
@@ -867,6 +960,7 @@ function initialize() {
     state.busy = false;
     setStatus("Exact EV engine ready. Your turn.");
     render();
+    runAdvisor();
   }, 0);
 }
 
@@ -875,5 +969,17 @@ elements.keepBtn.addEventListener("click", onKeepClick);
 elements.bankBtn.addEventListener("click", onBankClick);
 elements.newTurnBtn.addEventListener("click", onNewRound);
 elements.resetBtn.addEventListener("click", onResetMatch);
+elements.advisorRunBtn.addEventListener("click", runAdvisor);
+
+[
+  elements.advisorYourScore,
+  elements.advisorOpponentScore,
+  elements.advisorTargetScore,
+  elements.advisorTurnTotal,
+  elements.advisorDiceRemaining,
+  elements.advisorOpponentsLastTurn,
+].forEach((input) => {
+  input.addEventListener("change", runAdvisor);
+});
 
 initialize();

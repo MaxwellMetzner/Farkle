@@ -4,6 +4,13 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Farkle Lab</title>
+    <meta
+      name="description"
+      content="Play Farkle, review exact EV strategy, and analyze custom game states."
+    />
+    <link rel="icon" href="icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="icon.svg" />
+    <link rel="manifest" href="site.webmanifest" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -183,6 +190,58 @@
           </article>
 
         </div>
+      </section>
+
+      <section class="card advisor" aria-labelledby="advisor-title">
+        <h2 id="advisor-title">Game State Advisor</h2>
+        <p>
+          Enter a custom scenario and get an exact EV recommendation for whether to roll or
+          bank right now.
+        </p>
+
+        <div class="advisor-grid">
+          <label>
+            Your Score
+            <input id="advisor-your-score" type="number" min="0" step="100" value="0" />
+          </label>
+          <label>
+            Opponent Score
+            <input id="advisor-opponent-score" type="number" min="0" step="100" value="0" />
+          </label>
+          <label>
+            Target Score
+            <input id="advisor-target-score" type="number" min="1000" step="500" value="10000" />
+          </label>
+          <label>
+            Current Unbanked Turn Total
+            <input id="advisor-turn-total" type="number" min="0" step="50" value="0" />
+          </label>
+          <label>
+            Dice Remaining To Roll
+            <select id="advisor-dice-remaining">
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+              <option value="5">5</option>
+              <option value="6" selected>6</option>
+            </select>
+          </label>
+          <label class="advisor-checkbox">
+            <input id="advisor-opponents-last-turn" type="checkbox" checked />
+            Opponents get a last turn after someone reaches target
+          </label>
+        </div>
+
+        <div class="button-row">
+          <button id="advisor-run-btn" class="btn btn-primary">Get Recommendation</button>
+        </div>
+
+        <article class="mini-card">
+          <h3>Advisor Result</h3>
+          <p id="advisor-recommendation">Enter a scenario and run the advisor.</p>
+          <p id="advisor-details" class="hint">Roll EV: -, Bank EV: -</p>
+        </article>
       </section>
     </main>
 
