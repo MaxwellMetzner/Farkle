@@ -318,7 +318,7 @@ th {
   color: var(--ink-muted);
 }
 
-.advisor-grid input,
+.advisor-grid input:not([type="checkbox"]),
 .advisor-grid select {
   width: 100%;
   border: 1px solid #d9ceb8;
@@ -332,12 +332,17 @@ th {
 .advisor-checkbox {
   grid-column: 1 / -1;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 0.55rem;
+  line-height: 1.35;
 }
 
 .advisor-checkbox input {
-  width: auto;
+  width: 1rem;
+  height: 1rem;
+  margin: 0.14rem 0 0;
+  flex-shrink: 0;
+  accent-color: var(--primary);
 }
 
 .row-active {

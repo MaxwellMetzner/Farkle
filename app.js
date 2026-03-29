@@ -542,19 +542,48 @@ function shouldPressBecauseBehind() {
   return them >= 9000 && banked < them - 1000;
 }
 
-function pickBestAction(actions) {
+function getContinuationPlan(playerKey, turnTotal, diceRemaining) {
+  if (state.players[playerKey] + turnTotal >= TARGET_SCORE) {
+    return {
+      action: "BANK",
+      value: turnTotal,
+      winsGame: true,
+    };
+  }
+
+  const rollValue = getRollValue(diceRemaining, turnTotal);
+  if (rollValue > turnTotal) {
+    return {
+      action: "ROLL",
+      value: rollValue,
+      winsGame: false,
+    };
+  }
+
+  return {
+    action: "BANK",
+    value: turnTotal,
+    winsGame: false,
+  };
+}
+
+function pickBestAction(actions, playerKey = state.currentPlayer) {
   let best = null;
+  let bestPlan = null;
   let bestValue = -Infinity;
 
   for (const action of actions) {
-    const value = getTurnValue(action.nextDice, state.turnTotal + action.score);
+    const plan = getContinuationPlan(playerKey, state.turnTotal + action.score, action.nextDice);
+    const value = plan.winsGame ? Number.POSITIVE_INFINITY : plan.value;
+
     if (value > bestValue) {
       bestValue = value;
       best = action;
+      bestPlan = plan;
     }
   }
 
-  return { best, bestValue };
+  return { best, bestValue, bestPlan };
 }
 
 function renderDice() {
@@ -669,16 +698,29 @@ function renderRecommendation() {
 
 function renderOptimalAction() {
   if (state.pendingActions.length === 0) {
+    const plan = getContinuationPlan(state.currentPlayer, state.turnTotal, state.diceRemaining);
     const rollEV = getRollValue(state.diceRemaining, state.turnTotal);
     const bankEV = state.turnTotal;
-    const best = rollEV > bankEV ? "ROLL" : "BANK";
 
-    elements.optimalAction.innerHTML = `Before rolling, best action is <strong>${best}</strong>.`;
+    elements.optimalAction.innerHTML = `Best action is <strong>${plan.action}</strong>.`;
+
+    if (plan.winsGame) {
+      elements.optimalActionEv.textContent = `Banking now reaches ${TARGET_SCORE} and wins immediately.`;
+      return;
+    }
+
     elements.optimalActionEv.textContent = `EV now: roll ${rollEV.toFixed(2)} vs bank ${bankEV.toFixed(2)}.`;
     return;
   }
 
-  const { best, bestValue } = pickBestAction(state.pendingActions);
+  const { best, bestValue, bestPlan } = pickBestAction(state.pendingActions);
+
+  if (bestPlan.winsGame) {
+    elements.optimalAction.textContent = `Best current keep: [${best.keptValues.join(", ")}] for +${best.score}, then bank to win.`;
+    elements.optimalActionEv.textContent = `This keep reaches ${TARGET_SCORE} or better immediately.`;
+    return;
+  }
+
   elements.optimalAction.textContent = `Best current keep: [${best.keptValues.join(", ")}] for +${best.score}, then ${best.nextDice} dice.`;
   elements.optimalActionEv.textContent = `Exact full-turn EV after this keep: ${bestValue.toFixed(2)} points.`;
 }
@@ -768,7 +810,7 @@ function applyAction(action) {
 }
 
 async function cpuSelectAndKeep() {
-  const { best } = pickBestAction(state.pendingActions);
+  const { best } = pickBestAction(state.pendingActions, "cpu");
   const pickOrder = [];
 
   for (let index = 0; index < state.currentRoll.length; index += 1) {
@@ -800,14 +842,9 @@ async function cpuSelectAndKeep() {
 }
 
 async function cpuContinueTurn() {
-  const rollIsBetter = shouldRollForPureEV(state.diceRemaining, state.turnTotal);
+  const plan = getContinuationPlan("cpu", state.turnTotal, state.diceRemaining);
 
-  if (!rollIsBetter) {
-    await bankTurn();
-    return;
-  }
-
-  if (state.players.cpu + state.turnTotal >= TARGET_SCORE) {
+  if (plan.action === "BANK") {
     await bankTurn();
     return;
   }
