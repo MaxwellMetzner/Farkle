@@ -329,15 +329,22 @@ th {
   font-family: "Space Mono", monospace;
 }
 
-.advisor-checkbox {
+.advisor-grid label.advisor-checkbox {
   grid-column: 1 / -1;
   display: flex;
+  flex-wrap: nowrap;
   align-items: flex-start;
   gap: 0.55rem;
   line-height: 1.35;
+  padding-bottom: 0.35rem;
 }
 
-.advisor-checkbox input {
+.advisor-grid label.advisor-checkbox span {
+  flex: 1;
+  min-width: 0;
+}
+
+.advisor-grid label.advisor-checkbox input {
   width: 1rem;
   height: 1rem;
   margin: 0.14rem 0 0;

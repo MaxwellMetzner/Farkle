@@ -50,7 +50,6 @@ const elements = {
   pressingRecommendation: document.getElementById("pressing-recommendation"),
   optimalAction: document.getElementById("optimal-action"),
   optimalActionEv: document.getElementById("optimal-action-ev"),
-  newTurnBtn: document.getElementById("new-turn-btn"),
   rollBtn: document.getElementById("roll-btn"),
   keepBtn: document.getElementById("keep-btn"),
   bankBtn: document.getElementById("bank-btn"),
@@ -61,7 +60,6 @@ const elements = {
   advisorTurnTotal: document.getElementById("advisor-turn-total"),
   advisorDiceRemaining: document.getElementById("advisor-dice-remaining"),
   advisorOpponentsLastTurn: document.getElementById("advisor-opponents-last-turn"),
-  advisorRunBtn: document.getElementById("advisor-run-btn"),
   advisorRecommendation: document.getElementById("advisor-recommendation"),
   advisorDetails: document.getElementById("advisor-details"),
 };
@@ -437,10 +435,6 @@ function buildExactEVTables() {
   evEngine.ready = true;
 }
 
-function shouldRollForPureEV(n, t) {
-  return getRollValue(n, t) > t;
-}
-
 function clamp(value, low, high) {
   return Math.max(low, Math.min(high, value));
 }
@@ -751,7 +745,6 @@ function render() {
   elements.rollBtn.disabled = !canHumanAct || state.pendingActions.length > 0;
   elements.keepBtn.disabled = !canHumanAct || !legalSelection;
   elements.bankBtn.disabled = !canHumanAct || state.pendingActions.length > 0 || state.turnTotal === 0;
-  elements.newTurnBtn.disabled = state.busy;
   elements.resetBtn.disabled = state.busy;
 }
 
@@ -963,17 +956,6 @@ async function onBankClick() {
   await bankTurn();
 }
 
-function onNewRound() {
-  if (state.busy) {
-    return;
-  }
-  resetTurnState();
-  state.currentPlayer = "human";
-  state.gameOver = false;
-  setStatus("New round started. Your turn.");
-  render();
-}
-
 function onResetMatch() {
   if (state.busy) {
     return;
@@ -983,7 +965,7 @@ function onResetMatch() {
   resetTurnState();
   state.currentPlayer = "human";
   state.gameOver = false;
-  setStatus("Scores reset. Your turn.");
+  setStatus("Match reset. Your turn.");
   render();
 }
 
@@ -1004,9 +986,7 @@ function initialize() {
 elements.rollBtn.addEventListener("click", onRollClick);
 elements.keepBtn.addEventListener("click", onKeepClick);
 elements.bankBtn.addEventListener("click", onBankClick);
-elements.newTurnBtn.addEventListener("click", onNewRound);
 elements.resetBtn.addEventListener("click", onResetMatch);
-elements.advisorRunBtn.addEventListener("click", runAdvisor);
 
 [
   elements.advisorYourScore,
@@ -1016,6 +996,7 @@ elements.advisorRunBtn.addEventListener("click", runAdvisor);
   elements.advisorDiceRemaining,
   elements.advisorOpponentsLastTurn,
 ].forEach((input) => {
+  input.addEventListener("input", runAdvisor);
   input.addEventListener("change", runAdvisor);
 });
 
