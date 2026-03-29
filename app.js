@@ -536,8 +536,21 @@ function shouldPressBecauseBehind() {
   return them >= 9000 && banked < them - 1000;
 }
 
+function getOpponentKey(playerKey) {
+  return playerKey === "human" ? "cpu" : "human";
+}
+
 function getContinuationPlan(playerKey, turnTotal, diceRemaining) {
-  if (state.players[playerKey] + turnTotal >= TARGET_SCORE) {
+  const recommendation = computeStateRecommendation({
+    yourScore: state.players[playerKey],
+    opponentScore: state.players[getOpponentKey(playerKey)],
+    targetScore: TARGET_SCORE,
+    turnTotal,
+    diceRemaining,
+    opponentsGetLastTurn: false,
+  });
+
+  if (recommendation.bankedScore >= TARGET_SCORE) {
     return {
       action: "BANK",
       value: turnTotal,
@@ -545,18 +558,17 @@ function getContinuationPlan(playerKey, turnTotal, diceRemaining) {
     };
   }
 
-  const rollValue = getRollValue(diceRemaining, turnTotal);
-  if (rollValue > turnTotal) {
+  if (recommendation.action === "ROLL") {
     return {
       action: "ROLL",
-      value: rollValue,
+      value: recommendation.rollEV,
       winsGame: false,
     };
   }
 
   return {
     action: "BANK",
-    value: turnTotal,
+    value: recommendation.bankEV,
     winsGame: false,
   };
 }
@@ -565,12 +577,18 @@ function pickBestAction(actions, playerKey = state.currentPlayer) {
   let best = null;
   let bestPlan = null;
   let bestValue = -Infinity;
+  const epsilon = 1e-9;
 
   for (const action of actions) {
     const plan = getContinuationPlan(playerKey, state.turnTotal + action.score, action.nextDice);
     const value = plan.winsGame ? Number.POSITIVE_INFINITY : plan.value;
 
-    if (value > bestValue) {
+    const isTie = Math.abs(value - bestValue) <= epsilon;
+    const isBetterTieBreak =
+      best !== null &&
+      (action.score > best.score || (action.score === best.score && action.nextDice > best.nextDice));
+
+    if (value > bestValue + epsilon || (isTie && isBetterTieBreak)) {
       bestValue = value;
       best = action;
       bestPlan = plan;
