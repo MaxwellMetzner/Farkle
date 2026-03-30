@@ -573,29 +573,97 @@ function getContinuationPlan(playerKey, turnTotal, diceRemaining) {
   };
 }
 
+function evaluateActionOutcome(action, playerKey = state.currentPlayer) {
+  const turnTotal = state.turnTotal + action.score;
+  const recommendation = computeStateRecommendation({
+    yourScore: state.players[playerKey],
+    opponentScore: state.players[getOpponentKey(playerKey)],
+    targetScore: TARGET_SCORE,
+    turnTotal,
+    diceRemaining: action.nextDice,
+    opponentsGetLastTurn: false,
+  });
+
+  const plan = getContinuationPlan(playerKey, turnTotal, action.nextDice);
+
+  return {
+    action,
+    plan,
+    turnTotal,
+    bankValue: recommendation.bankEV,
+    continueValue: recommendation.rollEV,
+    rationale: recommendation.rationale,
+  };
+}
+
 function pickBestAction(actions, playerKey = state.currentPlayer) {
-  let best = null;
-  let bestPlan = null;
+  let bestOutcome = null;
   let bestValue = -Infinity;
   const epsilon = 1e-9;
 
   for (const action of actions) {
-    const plan = getContinuationPlan(playerKey, state.turnTotal + action.score, action.nextDice);
-    const value = plan.winsGame ? Number.POSITIVE_INFINITY : plan.value;
+    const outcome = evaluateActionOutcome(action, playerKey);
+    const value = outcome.plan.winsGame ? Number.POSITIVE_INFINITY : outcome.plan.value;
 
     const isTie = Math.abs(value - bestValue) <= epsilon;
     const isBetterTieBreak =
-      best !== null &&
-      (action.score > best.score || (action.score === best.score && action.nextDice > best.nextDice));
+      bestOutcome !== null &&
+      (action.score > bestOutcome.action.score ||
+        (action.score === bestOutcome.action.score && action.nextDice < bestOutcome.action.nextDice));
 
     if (value > bestValue + epsilon || (isTie && isBetterTieBreak)) {
       bestValue = value;
-      best = action;
-      bestPlan = plan;
+      bestOutcome = outcome;
     }
   }
 
-  return { best, bestValue, bestPlan };
+  return {
+    best: bestOutcome.action,
+    bestValue,
+    bestPlan: bestOutcome.plan,
+    bestOutcome,
+  };
+}
+
+function pickHighestScoringAction(actions, playerKey = state.currentPlayer) {
+  let bestOutcome = null;
+  let bestValue = -Infinity;
+  const epsilon = 1e-9;
+
+  for (const action of actions) {
+    const outcome = evaluateActionOutcome(action, playerKey);
+    const value = outcome.plan.winsGame ? Number.POSITIVE_INFINITY : outcome.plan.value;
+    const isFirstAction = bestOutcome === null;
+    const isWinningUpgrade = !isFirstAction && outcome.plan.winsGame && !bestOutcome.plan.winsGame;
+    const isHigherScoringKeep = !isFirstAction && action.score > bestOutcome.action.score;
+    const isSameScoreWithMoreDiceKept =
+      !isFirstAction &&
+      action.score === bestOutcome.action.score &&
+      action.nextDice < bestOutcome.action.nextDice;
+    const isSameKeepWithBetterFollowUp =
+      !isFirstAction &&
+      action.score === bestOutcome.action.score &&
+      action.nextDice === bestOutcome.action.nextDice &&
+      value > bestValue + epsilon;
+
+    if (
+      isFirstAction ||
+      isWinningUpgrade ||
+      isHigherScoringKeep ||
+      isSameScoreWithMoreDiceKept ||
+      isSameKeepWithBetterFollowUp
+    ) {
+      bestValue = value;
+      bestOutcome = outcome;
+    }
+  }
+
+  return {
+    best: bestOutcome.action,
+    bestValue,
+    bestPlan: bestOutcome.plan,
+    bestOutcome,
+  };
 }
 
 function renderDice() {
@@ -725,7 +793,8 @@ function renderOptimalAction() {
     return;
   }
 
-  const { best, bestValue, bestPlan } = pickBestAction(state.pendingActions);
+  const { best, bestPlan, bestOutcome } = pickBestAction(state.pendingActions);
+  const { best: highestScoreKeep } = pickHighestScoringAction(state.pendingActions);
 
   if (bestPlan.winsGame) {
     elements.optimalAction.textContent = `Best current keep: [${best.keptValues.join(", ")}] for +${best.score}, then bank to win.`;
@@ -733,8 +802,21 @@ function renderOptimalAction() {
     return;
   }
 
-  elements.optimalAction.textContent = `Best current keep: [${best.keptValues.join(", ")}] for +${best.score}, then ${best.nextDice} dice.`;
-  elements.optimalActionEv.textContent = `Exact full-turn EV after this keep: ${bestValue.toFixed(2)} points.`;
+  const pureMode = bestOutcome.continueValue > bestOutcome.bankValue ? "ROLL" : "BANK";
+  const usesLateGameOverride = bestPlan.action !== pureMode;
+  const baseDetail =
+    bestPlan.action === "ROLL"
+      ? `Roll EV ${bestOutcome.continueValue.toFixed(2)} vs bank ${bestOutcome.bankValue.toFixed(2)}.`
+      : `Bank EV ${bestOutcome.bankValue.toFixed(2)} vs roll ${bestOutcome.continueValue.toFixed(2)}.`;
+  const rationaleDetail = usesLateGameOverride ? ` ${bestOutcome.rationale}` : "";
+  const contrastDetail =
+    highestScoreKeep.mask !== best.mask
+      ? ` Highest immediate-score keep: [${highestScoreKeep.keptValues.join(", ")}] for +${highestScoreKeep.score}.`
+      : "";
+
+  elements.optimalAction.textContent =
+    `Best strategic keep: [${best.keptValues.join(", ")}] for +${best.score}, then ${bestPlan.action === "ROLL" ? `roll ${best.nextDice} dice` : "bank"}.`;
+  elements.optimalActionEv.textContent = `${baseDetail}${rationaleDetail}${contrastDetail}`;
 }
 
 function render() {
@@ -821,7 +903,7 @@ function applyAction(action) {
 }
 
 async function cpuSelectAndKeep() {
-  const { best } = pickBestAction(state.pendingActions, "cpu");
+  const { best } = pickHighestScoringAction(state.pendingActions, "cpu");
   const pickOrder = [];
 
   for (let index = 0; index < state.currentRoll.length; index += 1) {
