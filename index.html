@@ -14,53 +14,57 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;700;800&family=Space+Mono:wght@400;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <div class="bg-shape bg-shape-a"></div>
-    <div class="bg-shape bg-shape-b"></div>
     <main class="layout">
-      <header class="hero card">
-        <h1>Play Farkle + Explore Expected Value Strategy</h1>
-        <p>
-          This app uses your specified 6-dice ruleset and surfaces the pure-EV policy,
-          risk thresholds, and target-chasing endgame guidance.
-        </p>
+      <header class="app-header">
+        <div class="brand-lockup">
+          <img class="brand-icon" src="icon.svg" alt="" />
+          <div>
+            <p class="eyebrow">Exact EV Farkle</p>
+            <h1>Farkle Lab</h1>
+          </div>
+        </div>
+        <p>Play the match with the solver beside the board.</p>
       </header>
 
-      <section class="game-shell">
-        <section class="card game-panel" aria-labelledby="game-title">
+      <div class="workspace">
+        <section class="surface game-panel" aria-labelledby="game-title">
           <div class="panel-title-row">
-            <h2 id="game-title">Game Board</h2>
+            <div>
+              <p class="eyebrow">Match</p>
+              <h2 id="game-title">Game Board</h2>
+            </div>
             <span id="status-pill" class="status-pill">Your turn. Roll to begin.</span>
           </div>
 
           <div class="score-grid score-grid-two-player">
             <article>
-              <h3>Current Player</h3>
+              <h3>Player</h3>
               <p id="current-player" class="score-value">You</p>
             </article>
             <article>
-              <h3>Your Score</h3>
+              <h3>You</h3>
               <p id="human-score" class="score-value">0</p>
             </article>
             <article>
-              <h3>CPU Score</h3>
+              <h3>CPU</h3>
               <p id="cpu-score" class="score-value">0</p>
             </article>
             <article>
-              <h3>Turn Total</h3>
+              <h3>Turn</h3>
               <p id="turn-score" class="score-value">0</p>
             </article>
             <article>
-              <h3>Dice to Roll</h3>
+              <h3>Dice</h3>
               <p id="dice-remaining" class="score-value">6</p>
             </article>
             <article>
-              <h3>Best Legal Score</h3>
+              <h3>Best</h3>
               <p id="roll-potential" class="score-value">-</p>
             </article>
           </div>
@@ -68,111 +72,134 @@
           <div id="dice-tray" class="dice-tray" aria-live="polite"></div>
 
           <div class="button-row">
-            <button id="roll-btn" class="btn btn-primary">Roll Dice</button>
-            <button id="keep-btn" class="btn btn-secondary">Keep Selected Dice</button>
-            <button id="bank-btn" class="btn btn-secondary">Bank Turn</button>
-            <button id="reset-btn" class="btn btn-ghost">Reset Match</button>
+            <button id="roll-btn" class="btn btn-primary">Roll</button>
+            <button id="keep-btn" class="btn btn-secondary">Keep</button>
+            <button id="bank-btn" class="btn btn-warm">Bank</button>
+            <button id="reset-btn" class="btn btn-ghost">Reset</button>
           </div>
 
           <div class="action-block">
-            <h3>Legal Scoring Choices</h3>
-            <p class="hint">
-              Click dice to build a legal scoring selection. Illegal picks are disabled.
-            </p>
+            <div class="section-heading">
+              <h3>Legal Scoring Choices</h3>
+              <p class="hint">Selections update the EV callouts in the solver.</p>
+            </div>
             <div id="actions-list" class="actions-list"></div>
           </div>
         </section>
 
-        <section class="card scoring-condensed" aria-labelledby="scoring-title">
-          <h2 id="scoring-title">Scoring At A Glance</h2>
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Pattern</th>
-                  <th>Pts</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr><td>1</td><td>100</td></tr>
-                <tr><td>5</td><td>50</td></tr>
-                <tr><td>111</td><td>1000</td></tr>
-                <tr><td>222/333/444/555/666</td><td>200..600</td></tr>
-                <tr><td>4/5/6 of a kind</td><td>1000/2000/3000</td></tr>
-                <tr><td>Straight 1-6</td><td>1500</td></tr>
-                <tr><td>Three pairs</td><td>1500</td></tr>
-                <tr><td>4-kind + pair</td><td>1500</td></tr>
-                <tr><td>Two triplets</td><td>2500</td></tr>
-              </tbody>
-            </table>
+        <aside class="surface solver-panel" aria-labelledby="solver-title">
+          <div class="panel-title-row solver-title-row">
+            <div>
+              <p class="eyebrow">Solver</p>
+              <h2 id="solver-title">EV Console</h2>
+            </div>
           </div>
 
-          <article class="mini-card scoring-best-choice">
-            <h3>Current Roll Best Choice</h3>
+          <section class="solver-block solver-focus" aria-labelledby="current-roll-title">
+            <h3 id="current-roll-title">Current Roll</h3>
             <p id="optimal-action">Roll and choose dice to evaluate options.</p>
             <p id="optimal-action-ev" class="hint">Expected turn value: -</p>
-          </article>
-        </section>
-      </section>
+          </section>
 
-      <section class="card analysis" aria-labelledby="analysis-title">
-        <h2 id="analysis-title">EV Analysis</h2>
-        <p>
-          The table below reflects your precomputed exhaustive values under this same ruleset.
-          Use it to guide banking decisions.
-        </p>
+          <section class="solver-block advisor" aria-labelledby="advisor-title">
+            <div class="section-heading">
+              <h3 id="advisor-title">Game State Advisor</h3>
+              <p class="hint">Custom roll-versus-bank scenarios.</p>
+            </div>
 
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Dice Remaining</th>
-                <th>Farkle Probability</th>
-                <th>Best One-Roll EV</th>
-                <th>Full Optimal Turn EV (T=0)</th>
-                <th>Pure-EV Stop Threshold</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr data-ev-row="1"><td>1</td><td>66.67%</td><td>25.00</td><td>220.75</td><td>350</td></tr>
-              <tr data-ev-row="2"><td>2</td><td>44.44%</td><td>50.00</td><td>187.80</td><td>300</td></tr>
-              <tr data-ev-row="3"><td>3</td><td>27.78%</td><td>86.81</td><td>199.83</td><td>450</td></tr>
-              <tr data-ev-row="4"><td>4</td><td>15.74%</td><td>143.60</td><td>243.34</td><td>1050</td></tr>
-              <tr data-ev-row="5"><td>5</td><td>7.72%</td><td>226.11</td><td>338.67</td><td>3100</td></tr>
-              <tr data-ev-row="6"><td>6</td><td>2.31%</td><td>425.19</td><td>601.56</td><td>18400</td></tr>
-            </tbody>
-          </table>
-        </div>
+            <div class="advisor-grid">
+              <label>
+                Your Score
+                <input id="advisor-your-score" type="number" min="0" step="100" value="0" />
+              </label>
+              <label>
+                Opponent
+                <input id="advisor-opponent-score" type="number" min="0" step="100" value="0" />
+              </label>
+              <label>
+                Target
+                <input id="advisor-target-score" type="number" min="1000" step="500" value="10000" />
+              </label>
+              <label>
+                Turn Total
+                <input id="advisor-turn-total" type="number" min="0" step="50" value="0" />
+              </label>
+              <label>
+                Dice
+                <select id="advisor-dice-remaining">
+                  <option value="1">1</option>
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                  <option value="4">4</option>
+                  <option value="5">5</option>
+                  <option value="6" selected>6</option>
+                </select>
+              </label>
+              <label class="advisor-checkbox">
+                <input id="advisor-opponents-last-turn" type="checkbox" checked />
+                <span>Opponent final turn</span>
+              </label>
+            </div>
 
-        <div class="analysis-grid">
-          <article class="mini-card">
-            <h3>Pure-EV Recommendation</h3>
-            <p id="ev-recommendation">Roll if turn total is below threshold.</p>
-            <p id="ev-explainer" class="hint">
-              Thresholds come from expected points only, not race-to-10000 timing.
-            </p>
-            <ul>
-              <li>1 die: roll under 350</li>
-              <li>2 dice: roll under 300</li>
-              <li>3 dice: roll under 450</li>
-              <li>4 dice: roll under 1050</li>
-              <li>5 dice: roll under 3100</li>
-              <li>6 dice: roll almost always</li>
+            <div class="result-panel">
+              <h4>Advisor Result</h4>
+              <p id="advisor-recommendation">Enter a scenario to see the recommendation.</p>
+              <p id="advisor-details" class="hint">Roll EV: -, Bank EV: -</p>
+            </div>
+          </section>
+
+          <section class="solver-block analysis" aria-labelledby="analysis-title">
+            <div class="section-heading">
+              <h3 id="analysis-title">Pure EV</h3>
+              <p id="ev-recommendation">Roll if turn total is below threshold.</p>
+              <p id="ev-explainer" class="hint">
+                Thresholds compare banking now against rolling again.
+              </p>
+            </div>
+            <ul class="threshold-list">
+              <li><span>1 die</span><strong>&lt;350</strong></li>
+              <li><span>2 dice</span><strong>&lt;300</strong></li>
+              <li><span>3 dice</span><strong>&lt;450</strong></li>
+              <li><span>4 dice</span><strong>&lt;1050</strong></li>
+              <li><span>5 dice</span><strong>&lt;3100</strong></li>
+              <li><span>6 dice</span><strong>press</strong></li>
             </ul>
-          </article>
+          </section>
 
-          <article class="mini-card">
-            <h3>Target-Based Pressing (When Behind)</h3>
-            <p>
-              If banking now still leaves you in a nearly losing state, press for a larger target.
-            </p>
+          <details class="solver-block compact-details" open>
+            <summary>EV Table</summary>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Dice</th>
+                    <th>Farkle</th>
+                    <th>Roll EV</th>
+                    <th>Turn EV</th>
+                    <th>Stop</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr data-ev-row="1"><td>1</td><td>66.67%</td><td>25.00</td><td>220.75</td><td>350</td></tr>
+                  <tr data-ev-row="2"><td>2</td><td>44.44%</td><td>50.00</td><td>187.80</td><td>300</td></tr>
+                  <tr data-ev-row="3"><td>3</td><td>27.78%</td><td>86.81</td><td>199.83</td><td>450</td></tr>
+                  <tr data-ev-row="4"><td>4</td><td>15.74%</td><td>143.60</td><td>243.34</td><td>1050</td></tr>
+                  <tr data-ev-row="5"><td>5</td><td>7.72%</td><td>226.11</td><td>338.67</td><td>3100</td></tr>
+                  <tr data-ev-row="6"><td>6</td><td>2.31%</td><td>425.19</td><td>601.56</td><td>18400</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </details>
+
+          <details class="solver-block compact-details">
+            <summary>Target Pressing</summary>
             <p id="pressing-recommendation" class="hint">No target pressure right now.</p>
             <div class="table-wrap">
               <table>
                 <thead>
                   <tr>
-                    <th>Target This Turn</th>
-                    <th>Success Probability (6 die)</th>
+                    <th>Target</th>
+                    <th>6-die Success</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -186,58 +213,34 @@
                 </tbody>
               </table>
             </div>
-          </article>
+          </details>
 
-        </div>
-      </section>
-
-      <section class="card advisor" aria-labelledby="advisor-title">
-        <h2 id="advisor-title">Game State Advisor</h2>
-        <p>
-          Enter a custom scenario and get an exact EV recommendation for whether to roll or
-          bank right now.
-        </p>
-
-        <div class="advisor-grid">
-          <label>
-            Your Score
-            <input id="advisor-your-score" type="number" min="0" step="100" value="0" />
-          </label>
-          <label>
-            Opponent Score
-            <input id="advisor-opponent-score" type="number" min="0" step="100" value="0" />
-          </label>
-          <label>
-            Target Score
-            <input id="advisor-target-score" type="number" min="1000" step="500" value="10000" />
-          </label>
-          <label>
-            Current Unbanked Turn Total
-            <input id="advisor-turn-total" type="number" min="0" step="50" value="0" />
-          </label>
-          <label>
-            Dice Remaining To Roll
-            <select id="advisor-dice-remaining">
-              <option value="1">1</option>
-              <option value="2">2</option>
-              <option value="3">3</option>
-              <option value="4">4</option>
-              <option value="5">5</option>
-              <option value="6" selected>6</option>
-            </select>
-          </label>
-          <label class="advisor-checkbox">
-            <input id="advisor-opponents-last-turn" type="checkbox" checked />
-            <span>Opponents get a last turn after someone reaches target</span>
-          </label>
-        </div>
-
-        <article class="mini-card">
-          <h3>Advisor Result</h3>
-          <p id="advisor-recommendation">Enter a scenario to see the recommendation.</p>
-          <p id="advisor-details" class="hint">Roll EV: -, Bank EV: -</p>
-        </article>
-      </section>
+          <details class="solver-block compact-details scoring-condensed">
+            <summary>Scoring</summary>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Pattern</th>
+                    <th>Pts</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr><td>1</td><td>100</td></tr>
+                  <tr><td>5</td><td>50</td></tr>
+                  <tr><td>111</td><td>1000</td></tr>
+                  <tr><td>222/333/444/555/666</td><td>200..600</td></tr>
+                  <tr><td>4/5/6 of a kind</td><td>1000/2000/3000</td></tr>
+                  <tr><td>Straight 1-6</td><td>1500</td></tr>
+                  <tr><td>Three pairs</td><td>1500</td></tr>
+                  <tr><td>4-kind + pair</td><td>1500</td></tr>
+                  <tr><td>Two triplets</td><td>2500</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </details>
+        </aside>
+      </div>
     </main>
 
     <script src="app.js"></script>
