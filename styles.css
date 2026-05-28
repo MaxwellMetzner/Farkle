@@ -149,6 +149,25 @@ h4 {
   min-width: 0;
 }
 
+.site-signoff {
+  margin: 12px 2px 0;
+  color: var(--ink-muted);
+  font-size: 0.72rem;
+  text-align: right;
+}
+
+.site-signoff a {
+  color: inherit;
+  text-decoration-color: rgba(102, 100, 95, 0.55);
+  text-underline-offset: 0.16em;
+}
+
+.site-signoff a:hover,
+.site-signoff a:focus-visible {
+  color: var(--ink);
+  text-decoration-color: currentColor;
+}
+
 .surface {
   background: rgba(255, 254, 250, 0.94);
   border: 1px solid var(--line);
@@ -655,6 +674,10 @@ td {
 
   .game-analysis-grid {
     grid-template-columns: 1fr;
+  }
+
+  .site-signoff {
+    text-align: left;
   }
 }
 
