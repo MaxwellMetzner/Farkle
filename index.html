@@ -29,7 +29,6 @@
             <h1>Farkle Lab</h1>
           </div>
         </div>
-        <p>Play the match with the solver beside the board.</p>
       </header>
 
       <div class="workspace">
@@ -84,6 +83,51 @@
               <p class="hint">Selections update the EV callouts in the solver.</p>
             </div>
             <div id="actions-list" class="actions-list"></div>
+          </div>
+
+          <div class="game-analysis-grid">
+            <section class="solver-block analysis" aria-labelledby="analysis-title">
+              <div class="section-heading">
+                <h3 id="analysis-title">Pure EV</h3>
+                <p id="ev-recommendation">Roll if turn total is below threshold.</p>
+                <p id="ev-explainer" class="hint">
+                  Thresholds compare banking now against rolling again.
+                </p>
+              </div>
+              <ul class="threshold-list">
+                <li><span>1 die</span><strong>&lt;350</strong></li>
+                <li><span>2 dice</span><strong>&lt;300</strong></li>
+                <li><span>3 dice</span><strong>&lt;450</strong></li>
+                <li><span>4 dice</span><strong>&lt;1050</strong></li>
+                <li><span>5 dice</span><strong>&lt;3100</strong></li>
+                <li><span>6 dice</span><strong>press</strong></li>
+              </ul>
+            </section>
+
+            <details class="solver-block compact-details" open>
+              <summary>EV Table</summary>
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Dice</th>
+                      <th>Farkle</th>
+                      <th>Roll EV</th>
+                      <th>Turn EV</th>
+                      <th>Stop</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr data-ev-row="1"><td>1</td><td>66.67%</td><td>25.00</td><td>220.75</td><td>350</td></tr>
+                    <tr data-ev-row="2"><td>2</td><td>44.44%</td><td>50.00</td><td>187.80</td><td>300</td></tr>
+                    <tr data-ev-row="3"><td>3</td><td>27.78%</td><td>86.81</td><td>199.83</td><td>450</td></tr>
+                    <tr data-ev-row="4"><td>4</td><td>15.74%</td><td>143.60</td><td>243.34</td><td>1050</td></tr>
+                    <tr data-ev-row="5"><td>5</td><td>7.72%</td><td>226.11</td><td>338.67</td><td>3100</td></tr>
+                    <tr data-ev-row="6"><td>6</td><td>2.31%</td><td>425.19</td><td>601.56</td><td>18400</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </details>
           </div>
         </section>
 
@@ -141,58 +185,15 @@
               </label>
             </div>
 
-            <div class="result-panel">
-              <h4>Advisor Result</h4>
+            <div id="advisor-result" class="result-panel result-panel-warning" hidden>
+              <h4>State Warning</h4>
               <p id="advisor-recommendation">Enter a scenario to see the recommendation.</p>
               <p id="advisor-details" class="hint">Roll EV: -, Bank EV: -</p>
             </div>
           </section>
 
-          <section class="solver-block analysis" aria-labelledby="analysis-title">
-            <div class="section-heading">
-              <h3 id="analysis-title">Pure EV</h3>
-              <p id="ev-recommendation">Roll if turn total is below threshold.</p>
-              <p id="ev-explainer" class="hint">
-                Thresholds compare banking now against rolling again.
-              </p>
-            </div>
-            <ul class="threshold-list">
-              <li><span>1 die</span><strong>&lt;350</strong></li>
-              <li><span>2 dice</span><strong>&lt;300</strong></li>
-              <li><span>3 dice</span><strong>&lt;450</strong></li>
-              <li><span>4 dice</span><strong>&lt;1050</strong></li>
-              <li><span>5 dice</span><strong>&lt;3100</strong></li>
-              <li><span>6 dice</span><strong>press</strong></li>
-            </ul>
-          </section>
-
-          <details class="solver-block compact-details" open>
-            <summary>EV Table</summary>
-            <div class="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Dice</th>
-                    <th>Farkle</th>
-                    <th>Roll EV</th>
-                    <th>Turn EV</th>
-                    <th>Stop</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr data-ev-row="1"><td>1</td><td>66.67%</td><td>25.00</td><td>220.75</td><td>350</td></tr>
-                  <tr data-ev-row="2"><td>2</td><td>44.44%</td><td>50.00</td><td>187.80</td><td>300</td></tr>
-                  <tr data-ev-row="3"><td>3</td><td>27.78%</td><td>86.81</td><td>199.83</td><td>450</td></tr>
-                  <tr data-ev-row="4"><td>4</td><td>15.74%</td><td>143.60</td><td>243.34</td><td>1050</td></tr>
-                  <tr data-ev-row="5"><td>5</td><td>7.72%</td><td>226.11</td><td>338.67</td><td>3100</td></tr>
-                  <tr data-ev-row="6"><td>6</td><td>2.31%</td><td>425.19</td><td>601.56</td><td>18400</td></tr>
-                </tbody>
-              </table>
-            </div>
-          </details>
-
           <details class="solver-block compact-details">
-            <summary>Target Pressing</summary>
+            <summary>Target Pressing <span class="summary-note">late-game catch-up</span></summary>
             <p id="pressing-recommendation" class="hint">No target pressure right now.</p>
             <div class="table-wrap">
               <table>
@@ -216,7 +217,7 @@
           </details>
 
           <details class="solver-block compact-details scoring-condensed">
-            <summary>Scoring</summary>
+            <summary>Scoring Rules <span class="summary-note">static reference</span></summary>
             <div class="table-wrap">
               <table>
                 <thead>

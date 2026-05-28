@@ -60,6 +60,7 @@ const elements = {
   advisorTurnTotal: document.getElementById("advisor-turn-total"),
   advisorDiceRemaining: document.getElementById("advisor-dice-remaining"),
   advisorOpponentsLastTurn: document.getElementById("advisor-opponents-last-turn"),
+  advisorResult: document.getElementById("advisor-result"),
   advisorRecommendation: document.getElementById("advisor-recommendation"),
   advisorDetails: document.getElementById("advisor-details"),
 };
@@ -458,30 +459,38 @@ function computeStateRecommendation({
   const rollEV = getRollValue(diceRemaining, turnTotal);
   const bankEV = turnTotal;
   const bankedScore = yourScore + turnTotal;
+  const pureAction = rollEV > bankEV ? "ROLL" : "BANK";
 
-  let action = rollEV > bankEV ? "ROLL" : "BANK";
+  let action = pureAction;
   let rationale =
     action === "ROLL"
       ? "Pure EV favors continuing this turn."
       : "Pure EV favors locking in points now.";
+  let rule = "pure_ev";
 
   if (bankedScore >= targetScore) {
     action = "BANK";
     rationale = opponentsGetLastTurn
       ? "Banking reaches target now. Even with a final reply turn, this is the standard play."
       : "Banking reaches target and ends the game immediately.";
+    rule = "target_reached";
   } else if (opponentScore >= targetScore && bankedScore < opponentScore) {
     action = "ROLL";
     rationale = "Opponent has already reached target, so you must press for a bigger turn.";
+    rule = "must_catch_up";
   } else if (opponentScore >= targetScore - 600 && bankedScore < opponentScore - 700 && turnTotal < 1400) {
     action = "ROLL";
     rationale =
       "You are in late-game catch-up mode. Pressing improves comeback chances versus small banks.";
+    rule = "late_game_press";
   }
 
   return {
     action,
+    pureAction,
     rationale,
+    rule,
+    hasStateOverride: rule !== "pure_ev" && action !== pureAction,
     rollEV,
     bankEV,
     bankedScore,
@@ -490,8 +499,7 @@ function computeStateRecommendation({
 
 function runAdvisor() {
   if (!evEngine.ready) {
-    elements.advisorRecommendation.textContent = "EV engine is still loading. Try again in a moment.";
-    elements.advisorDetails.textContent = "Roll EV: -, Bank EV: -";
+    elements.advisorResult.hidden = true;
     return;
   }
 
@@ -511,11 +519,18 @@ function runAdvisor() {
     opponentsGetLastTurn,
   });
 
+  if (!recommendation.hasStateOverride) {
+    elements.advisorResult.hidden = true;
+    return;
+  }
+
+  elements.advisorResult.hidden = false;
   elements.advisorRecommendation.innerHTML =
-    `Recommended action: <strong>${recommendation.action}</strong>. ${recommendation.rationale}`;
+    `Game-state override: <strong>${recommendation.action}</strong>. ${recommendation.rationale}`;
 
   elements.advisorDetails.textContent =
-    `Roll EV: ${recommendation.rollEV.toFixed(2)} | Bank EV: ${recommendation.bankEV.toFixed(2)} | ` +
+    `Pure EV would ${recommendation.pureAction}. Roll EV: ${recommendation.rollEV.toFixed(2)} | ` +
+    `Bank EV: ${recommendation.bankEV.toFixed(2)} | ` +
     `Score if banked now: ${recommendation.bankedScore}`;
 }
 

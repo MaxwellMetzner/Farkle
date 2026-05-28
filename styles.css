@@ -360,6 +360,14 @@ h4 {
   margin-top: 16px;
 }
 
+.game-analysis-grid {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: minmax(240px, 0.8fr) minmax(420px, 1.2fr);
+  gap: 10px;
+  align-items: start;
+}
+
 .section-heading {
   display: grid;
   gap: 4px;
@@ -481,6 +489,19 @@ h4 {
   background: var(--surface);
 }
 
+.result-panel[hidden] {
+  display: none;
+}
+
+.result-panel-warning {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.result-panel-warning h4 {
+  color: #8f2f1f;
+}
+
 .threshold-list {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -524,6 +545,13 @@ h4 {
   font-size: 0.84rem;
   font-weight: 800;
   list-style-position: outside;
+}
+
+.summary-note {
+  margin-left: 6px;
+  color: var(--ink-muted);
+  font-size: 0.76rem;
+  font-weight: 600;
 }
 
 .compact-details .table-wrap,
@@ -591,9 +619,8 @@ td {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .solver-title-row,
-  .advisor,
-  .analysis {
+  .solver-panel > .solver-title-row,
+  .solver-panel > .advisor {
     grid-column: 1 / -1;
   }
 }
@@ -623,6 +650,10 @@ td {
   }
 
   .solver-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .game-analysis-grid {
     grid-template-columns: 1fr;
   }
 }
