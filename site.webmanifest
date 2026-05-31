@@ -1,7 +1,7 @@
 {
   "name": "Farkle Lab",
   "short_name": "Farkle",
-  "description": "Play Farkle and analyze exact EV strategy.",
+  "description": "Play Farkle and analyze exact EV strategy across live and custom states.",
   "start_url": ".",
   "display": "standalone",
   "background_color": "#f4efe6",

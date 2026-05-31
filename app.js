@@ -63,7 +63,69 @@ const elements = {
   advisorResult: document.getElementById("advisor-result"),
   advisorRecommendation: document.getElementById("advisor-recommendation"),
   advisorDetails: document.getElementById("advisor-details"),
+  stateLabStatus: document.getElementById("state-lab-status"),
+  stateLabYourScore: document.getElementById("state-lab-your-score"),
+  stateLabOpponentScore: document.getElementById("state-lab-opponent-score"),
+  stateLabTargetScore: document.getElementById("state-lab-target-score"),
+  stateLabTurnTotal: document.getElementById("state-lab-turn-total"),
+  stateLabDiceRemaining: document.getElementById("state-lab-dice-remaining"),
+  stateLabOpponentsLastTurn: document.getElementById("state-lab-opponents-last-turn"),
+  stateLabRollState: document.getElementById("state-lab-roll-state"),
+  stateLabCurrentRoll: document.getElementById("state-lab-current-roll"),
+  stateLabResult: document.getElementById("state-lab-result"),
+  stateLabRecommendation: document.getElementById("state-lab-recommendation"),
+  stateLabDetails: document.getElementById("state-lab-details"),
+  stateLabActions: document.getElementById("state-lab-actions"),
 };
+
+const hasGameUI = [
+  elements.currentPlayer,
+  elements.humanScore,
+  elements.cpuScore,
+  elements.turnScore,
+  elements.diceRemaining,
+  elements.rollPotential,
+  elements.diceTray,
+  elements.actionsList,
+  elements.statusPill,
+  elements.evRecommendation,
+  elements.evExplainer,
+  elements.pressingRecommendation,
+  elements.optimalAction,
+  elements.optimalActionEv,
+  elements.rollBtn,
+  elements.keepBtn,
+  elements.bankBtn,
+  elements.resetBtn,
+].every(Boolean);
+
+const hasAdvisorUI = [
+  elements.advisorYourScore,
+  elements.advisorOpponentScore,
+  elements.advisorTargetScore,
+  elements.advisorTurnTotal,
+  elements.advisorDiceRemaining,
+  elements.advisorOpponentsLastTurn,
+  elements.advisorResult,
+  elements.advisorRecommendation,
+  elements.advisorDetails,
+].every(Boolean);
+
+const hasStateLabUI = [
+  elements.stateLabStatus,
+  elements.stateLabYourScore,
+  elements.stateLabOpponentScore,
+  elements.stateLabTargetScore,
+  elements.stateLabTurnTotal,
+  elements.stateLabDiceRemaining,
+  elements.stateLabOpponentsLastTurn,
+  elements.stateLabRollState,
+  elements.stateLabCurrentRoll,
+  elements.stateLabResult,
+  elements.stateLabRecommendation,
+  elements.stateLabDetails,
+  elements.stateLabActions,
+].every(Boolean);
 
 const evEngine = {
   ready: false,
@@ -298,7 +360,9 @@ function computeSelectableMask(selectedMask, actions, diceCount) {
 }
 
 function setStatus(text) {
-  elements.statusPill.textContent = text;
+  if (elements.statusPill) {
+    elements.statusPill.textContent = text;
+  }
 }
 
 function getCurrentPlayerLabel() {
@@ -497,7 +561,147 @@ function computeStateRecommendation({
   };
 }
 
+function getContinuationPlanForState({
+  yourScore,
+  opponentScore,
+  targetScore,
+  turnTotal,
+  diceRemaining,
+  opponentsGetLastTurn,
+}) {
+  const recommendation = computeStateRecommendation({
+    yourScore,
+    opponentScore,
+    targetScore,
+    turnTotal,
+    diceRemaining,
+    opponentsGetLastTurn,
+  });
+
+  if (recommendation.bankedScore >= targetScore) {
+    return {
+      action: "BANK",
+      value: turnTotal,
+      winsGame: true,
+      recommendation,
+    };
+  }
+
+  if (recommendation.action === "ROLL") {
+    return {
+      action: "ROLL",
+      value: recommendation.rollEV,
+      winsGame: false,
+      recommendation,
+    };
+  }
+
+  return {
+    action: "BANK",
+    value: recommendation.bankEV,
+    winsGame: false,
+    recommendation,
+  };
+}
+
+function evaluateActionOutcomeForState(action, context) {
+  const turnTotal = context.turnTotal + action.score;
+  const plan = getContinuationPlanForState({
+    yourScore: context.yourScore,
+    opponentScore: context.opponentScore,
+    targetScore: context.targetScore,
+    turnTotal,
+    diceRemaining: action.nextDice,
+    opponentsGetLastTurn: context.opponentsGetLastTurn,
+  });
+  const recommendation = plan.recommendation;
+
+  return {
+    action,
+    plan,
+    turnTotal,
+    bankValue: recommendation.bankEV,
+    continueValue: recommendation.rollEV,
+    rationale: recommendation.rationale,
+    recommendation,
+  };
+}
+
+function pickBestActionForState(actions, context) {
+  let bestOutcome = null;
+  let bestValue = -Infinity;
+  const epsilon = 1e-9;
+
+  for (const action of actions) {
+    const outcome = evaluateActionOutcomeForState(action, context);
+    const value = outcome.plan.winsGame ? Number.POSITIVE_INFINITY : outcome.plan.value;
+
+    const isTie = Math.abs(value - bestValue) <= epsilon;
+    const isBetterTieBreak =
+      bestOutcome !== null &&
+      (action.score > bestOutcome.action.score ||
+        (action.score === bestOutcome.action.score && action.nextDice < bestOutcome.action.nextDice));
+
+    if (value > bestValue + epsilon || (isTie && isBetterTieBreak)) {
+      bestValue = value;
+      bestOutcome = outcome;
+    }
+  }
+
+  return {
+    best: bestOutcome.action,
+    bestValue,
+    bestPlan: bestOutcome.plan,
+    bestOutcome,
+  };
+}
+
+function pickHighestScoringActionForState(actions, context) {
+  let bestOutcome = null;
+  let bestValue = -Infinity;
+  const epsilon = 1e-9;
+
+  for (const action of actions) {
+    const outcome = evaluateActionOutcomeForState(action, context);
+    const value = outcome.plan.winsGame ? Number.POSITIVE_INFINITY : outcome.plan.value;
+    const isFirstAction = bestOutcome === null;
+    const isWinningUpgrade = !isFirstAction && outcome.plan.winsGame && !bestOutcome.plan.winsGame;
+    const isHigherScoringKeep = !isFirstAction && action.score > bestOutcome.action.score;
+    const isSameScoreWithMoreDiceKept =
+      !isFirstAction &&
+      action.score === bestOutcome.action.score &&
+      action.nextDice < bestOutcome.action.nextDice;
+    const isSameKeepWithBetterFollowUp =
+      !isFirstAction &&
+      action.score === bestOutcome.action.score &&
+      action.nextDice === bestOutcome.action.nextDice &&
+      value > bestValue + epsilon;
+
+    if (
+      isFirstAction ||
+      isWinningUpgrade ||
+      isHigherScoringKeep ||
+      isSameScoreWithMoreDiceKept ||
+      isSameKeepWithBetterFollowUp
+    ) {
+      bestValue = value;
+      bestOutcome = outcome;
+    }
+  }
+
+  return {
+    best: bestOutcome.action,
+    bestValue,
+    bestPlan: bestOutcome.plan,
+    bestOutcome,
+  };
+}
+
 function runAdvisor() {
+  if (!hasAdvisorUI) {
+    return;
+  }
+
   if (!evEngine.ready) {
     elements.advisorResult.hidden = true;
     return;
@@ -556,7 +760,7 @@ function getOpponentKey(playerKey) {
 }
 
 function getContinuationPlan(playerKey, turnTotal, diceRemaining) {
-  const recommendation = computeStateRecommendation({
+  const plan = getContinuationPlanForState({
     yourScore: state.players[playerKey],
     opponentScore: state.players[getOpponentKey(playerKey)],
     targetScore: TARGET_SCORE,
@@ -565,46 +769,35 @@ function getContinuationPlan(playerKey, turnTotal, diceRemaining) {
     opponentsGetLastTurn: false,
   });
 
-  if (recommendation.bankedScore >= TARGET_SCORE) {
-    return {
-      action: "BANK",
-      value: turnTotal,
-      winsGame: true,
-    };
-  }
-
-  if (recommendation.action === "ROLL") {
-    return {
-      action: "ROLL",
-      value: recommendation.rollEV,
-      winsGame: false,
-    };
-  }
-
   return {
-    action: "BANK",
-    value: recommendation.bankEV,
-    winsGame: false,
+    action: plan.action,
+    value: plan.value,
+    winsGame: plan.winsGame,
   };
 }
 
 function evaluateActionOutcome(action, playerKey = state.currentPlayer) {
-  const turnTotal = state.turnTotal + action.score;
-  const recommendation = computeStateRecommendation({
+  const context = {
     yourScore: state.players[playerKey],
     opponentScore: state.players[getOpponentKey(playerKey)],
     targetScore: TARGET_SCORE,
-    turnTotal,
+    turnTotal: state.turnTotal,
+    opponentsGetLastTurn: false,
+  };
+  const outcome = evaluateActionOutcomeForState(action, context);
+  const recommendation = computeStateRecommendation({
+    yourScore: context.yourScore,
+    opponentScore: context.opponentScore,
+    targetScore: context.targetScore,
+    turnTotal: outcome.turnTotal,
     diceRemaining: action.nextDice,
     opponentsGetLastTurn: false,
   });
 
-  const plan = getContinuationPlan(playerKey, turnTotal, action.nextDice);
-
   return {
     action,
-    plan,
-    turnTotal,
+    plan: outcome.plan,
+    turnTotal: outcome.turnTotal,
     bankValue: recommendation.bankEV,
     continueValue: recommendation.rollEV,
     rationale: recommendation.rationale,
@@ -612,76 +805,253 @@ function evaluateActionOutcome(action, playerKey = state.currentPlayer) {
 }
 
 function pickBestAction(actions, playerKey = state.currentPlayer) {
-  let bestOutcome = null;
-  let bestValue = -Infinity;
-  const epsilon = 1e-9;
-
-  for (const action of actions) {
-    const outcome = evaluateActionOutcome(action, playerKey);
-    const value = outcome.plan.winsGame ? Number.POSITIVE_INFINITY : outcome.plan.value;
-
-    const isTie = Math.abs(value - bestValue) <= epsilon;
-    const isBetterTieBreak =
-      bestOutcome !== null &&
-      (action.score > bestOutcome.action.score ||
-        (action.score === bestOutcome.action.score && action.nextDice < bestOutcome.action.nextDice));
-
-    if (value > bestValue + epsilon || (isTie && isBetterTieBreak)) {
-      bestValue = value;
-      bestOutcome = outcome;
-    }
-  }
-
-  return {
-    best: bestOutcome.action,
-    bestValue,
-    bestPlan: bestOutcome.plan,
-    bestOutcome,
-  };
+  return pickBestActionForState(actions, {
+    yourScore: state.players[playerKey],
+    opponentScore: state.players[getOpponentKey(playerKey)],
+    targetScore: TARGET_SCORE,
+    turnTotal: state.turnTotal,
+    opponentsGetLastTurn: false,
+  });
 }
 
 function pickHighestScoringAction(actions, playerKey = state.currentPlayer) {
-  let bestOutcome = null;
-  let bestValue = -Infinity;
-  const epsilon = 1e-9;
+  return pickHighestScoringActionForState(actions, {
+    yourScore: state.players[playerKey],
+    opponentScore: state.players[getOpponentKey(playerKey)],
+    targetScore: TARGET_SCORE,
+    turnTotal: state.turnTotal,
+    opponentsGetLastTurn: false,
+  });
+}
 
-  for (const action of actions) {
-    const outcome = evaluateActionOutcome(action, playerKey);
-    const value = outcome.plan.winsGame ? Number.POSITIVE_INFINITY : outcome.plan.value;
-    const isFirstAction = bestOutcome === null;
-    const isWinningUpgrade = !isFirstAction && outcome.plan.winsGame && !bestOutcome.plan.winsGame;
-    const isHigherScoringKeep = !isFirstAction && action.score > bestOutcome.action.score;
-    const isSameScoreWithMoreDiceKept =
-      !isFirstAction &&
-      action.score === bestOutcome.action.score &&
-      action.nextDice < bestOutcome.action.nextDice;
-    const isSameKeepWithBetterFollowUp =
-      !isFirstAction &&
-      action.score === bestOutcome.action.score &&
-      action.nextDice === bestOutcome.action.nextDice &&
-      value > bestValue + epsilon;
+function clearStateLabActions(message) {
+  if (!hasStateLabUI) {
+    return;
+  }
 
-    if (
-      isFirstAction ||
-      isWinningUpgrade ||
-      isHigherScoringKeep ||
-      isSameScoreWithMoreDiceKept ||
-      isSameKeepWithBetterFollowUp
-    ) {
-      bestValue = value;
-      bestOutcome = outcome;
+  elements.stateLabActions.innerHTML = "";
+  const empty = document.createElement("p");
+  empty.className = "hint";
+  empty.textContent = message;
+  elements.stateLabActions.appendChild(empty);
+}
+
+function setStateLabStatus(text) {
+  if (!hasStateLabUI) {
+    return;
+  }
+
+  elements.stateLabStatus.textContent = text;
+}
+
+function syncStateLabRollField() {
+  if (!hasStateLabUI) {
+    return;
+  }
+
+  const evaluatingRolledState = elements.stateLabRollState.value === "rolled";
+  elements.stateLabCurrentRoll.disabled = !evaluatingRolledState || !evEngine.ready;
+  elements.stateLabCurrentRoll.placeholder = evaluatingRolledState
+    ? "Example: 1 5 5 2"
+    : "Only needed when evaluating an already-rolled state";
+}
+
+function parseStateLabRoll(rawValue) {
+  const trimmed = rawValue.trim();
+  if (!trimmed) {
+    return {
+      values: null,
+      error: "Enter the dice from the current roll as digits 1 through 6, separated by spaces or commas.",
+    };
+  }
+
+  const tokens = trimmed.split(/[\s,]+/).filter(Boolean);
+  if (tokens.length === 0) {
+    return {
+      values: null,
+      error: "Enter the dice from the current roll as digits 1 through 6, separated by spaces or commas.",
+    };
+  }
+
+  const values = [];
+  for (const token of tokens) {
+    if (!/^[1-6]$/.test(token)) {
+      return {
+        values: null,
+        error: `Invalid die value \"${token}\". Use only digits 1 through 6.`,
+      };
     }
+    values.push(Number(token));
+  }
+
+  if (values.length > 6) {
+    return {
+      values: null,
+      error: "A Farkle roll can include at most 6 dice.",
+    };
   }
 
   return {
-    best: bestOutcome.action,
-    bestValue,
-    bestPlan: bestOutcome.plan,
-    bestOutcome,
+    values,
+    error: null,
   };
 }
 
+function getStateLabActionSignature(action) {
+  return `${action.keptValues.join(",")}|${action.score}|${action.nextDice}`;
+}
+
+function renderStateLabActionOutcomes(outcomes, bestAction) {
+  if (!hasStateLabUI) {
+    return;
+  }
+
+  elements.stateLabActions.innerHTML = "";
+
+  const bestSignature = getStateLabActionSignature(bestAction);
+  const uniqueOutcomes = [];
+  const seenOutcomes = new Set();
+
+  outcomes.forEach((outcome) => {
+    const signature = getStateLabActionSignature(outcome.action);
+    if (seenOutcomes.has(signature)) {
+      return;
+    }
+    seenOutcomes.add(signature);
+    uniqueOutcomes.push(outcome);
+  });
+
+  const orderedOutcomes = uniqueOutcomes.slice().sort((left, right) => {
+    const leftSignature = getStateLabActionSignature(left.action);
+    const rightSignature = getStateLabActionSignature(right.action);
+
+    if (leftSignature === bestSignature) {
+      return -1;
+    }
+    if (rightSignature === bestSignature) {
+      return 1;
+    }
+    if (right.action.score !== left.action.score) {
+      return right.action.score - left.action.score;
+    }
+    return left.action.nextDice - right.action.nextDice;
+  });
+
+  orderedOutcomes.forEach((outcome) => {
+    const card = document.createElement("article");
+    card.className = "action-item state-lab-action-card";
+    if (getStateLabActionSignature(outcome.action) === bestSignature) {
+      card.classList.add("action-item-active");
+    }
+
+    const headline = document.createElement("p");
+    headline.className = "state-lab-action-title";
+    headline.textContent = outcome.plan.winsGame
+      ? `Keep [${outcome.action.keptValues.join(", ")}] for +${outcome.action.score}, then bank to win.`
+      : `Keep [${outcome.action.keptValues.join(", ")}] for +${outcome.action.score}, then ${outcome.plan.action === "ROLL" ? `roll ${outcome.action.nextDice} dice` : "bank"}.`;
+
+    const detail = document.createElement("p");
+    detail.className = "state-lab-action-detail";
+    detail.textContent =
+      `Bank EV ${outcome.bankValue.toFixed(2)} | Roll EV ${outcome.continueValue.toFixed(2)} | ` +
+      `Banked score ${outcome.recommendation.bankedScore}`;
+
+    card.appendChild(headline);
+    card.appendChild(detail);
+    elements.stateLabActions.appendChild(card);
+  });
+}
+
+function runStateLab() {
+  if (!hasStateLabUI) {
+    return;
+  }
+
+  syncStateLabRollField();
+
+  if (!evEngine.ready) {
+    elements.stateLabResult.hidden = true;
+    setStateLabStatus("Building exact EV engine...");
+    clearStateLabActions("Loading solver tables...");
+    return;
+  }
+
+  setStateLabStatus("Exact EV engine ready.");
+
+  const context = {
+    yourScore: toNonNegativeInt(elements.stateLabYourScore.value, 0),
+    opponentScore: toNonNegativeInt(elements.stateLabOpponentScore.value, 0),
+    targetScore: clamp(toNonNegativeInt(elements.stateLabTargetScore.value, TARGET_SCORE), 1000, 50000),
+    turnTotal: toNonNegativeInt(elements.stateLabTurnTotal.value, 0),
+    diceRemaining: clamp(toNonNegativeInt(elements.stateLabDiceRemaining.value, 6), 1, 6),
+    opponentsGetLastTurn: Boolean(elements.stateLabOpponentsLastTurn.checked),
+  };
+  const evaluatingRolledState = elements.stateLabRollState.value === "rolled";
+  const baseRecommendation = computeStateRecommendation(context);
+
+  elements.stateLabResult.hidden = false;
+
+  if (!evaluatingRolledState) {
+    elements.stateLabRecommendation.innerHTML =
+      `Best action right now: <strong>${baseRecommendation.action}</strong>. ${baseRecommendation.rationale}`;
+    elements.stateLabDetails.textContent =
+      `Pure EV would ${baseRecommendation.pureAction}. Roll EV: ${baseRecommendation.rollEV.toFixed(2)} | ` +
+      `Bank EV: ${baseRecommendation.bankEV.toFixed(2)} | ` +
+      `Score if banked now: ${baseRecommendation.bankedScore}`;
+    clearStateLabActions("Switch to Rolled mode and enter the current dice to compare legal keeps for a specific throw.");
+    return;
+  }
+
+  const parsedRoll = parseStateLabRoll(elements.stateLabCurrentRoll.value);
+  if (parsedRoll.error) {
+    elements.stateLabRecommendation.innerHTML = `Need roll input: <strong>Enter the current dice.</strong>`;
+    elements.stateLabDetails.textContent = parsedRoll.error;
+    clearStateLabActions("Examples: 1 5 5 2 or 1,5,5,2");
+    return;
+  }
+
+  if (parsedRoll.values.length !== context.diceRemaining) {
+    elements.stateLabRecommendation.innerHTML = `Input mismatch: <strong>${context.diceRemaining} dice expected.</strong>`;
+    elements.stateLabDetails.textContent =
+      `You selected ${context.diceRemaining} dice remaining, but entered ${parsedRoll.values.length} die values.`;
+    clearStateLabActions("Make the dice count match the current roll before evaluating keeps.");
+    return;
+  }
+
+  const actions = enumerateLegalActions(parsedRoll.values);
+  if (actions.length === 0) {
+    elements.stateLabRecommendation.innerHTML = "Forced result: <strong>FARKLE</strong>. No legal scoring keep is available.";
+    elements.stateLabDetails.textContent =
+      `Rolled [${parsedRoll.values.join(", ")}]. The turn ends immediately and the unbanked ${context.turnTotal} points are lost.`;
+    clearStateLabActions("No scoring actions exist for this roll.");
+    return;
+  }
+
+  const outcomes = actions.map((action) => evaluateActionOutcomeForState(action, context));
+  const { best, bestPlan, bestOutcome } = pickBestActionForState(actions, context);
+  const { best: highestScoreKeep } = pickHighestScoringActionForState(actions, context);
+  const pureMode = bestOutcome.continueValue > bestOutcome.bankValue ? "ROLL" : "BANK";
+  const usesLateGameOverride = bestPlan.action !== pureMode;
+  const contrastDetail =
+    highestScoreKeep.mask !== best.mask
+      ? ` Highest immediate-score keep: [${highestScoreKeep.keptValues.join(", ")}] for +${highestScoreKeep.score}.`
+      : "";
+
+  elements.stateLabRecommendation.innerHTML = bestPlan.winsGame
+    ? `Best keep: <strong>[${best.keptValues.join(", ")}]</strong> for +${best.score}, then bank to win.`
+    : `Best keep: <strong>[${best.keptValues.join(", ")}]</strong> for +${best.score}, then <strong>${bestPlan.action}</strong>.`;
+  elements.stateLabDetails.textContent = bestPlan.winsGame
+    ? `This line reaches ${context.targetScore} or better immediately.`
+    : `${bestPlan.action === "ROLL" ? `Roll EV ${bestOutcome.continueValue.toFixed(2)} vs bank ${bestOutcome.bankValue.toFixed(2)}.` : `Bank EV ${bestOutcome.bankValue.toFixed(2)} vs roll ${bestOutcome.continueValue.toFixed(2)}.`}${usesLateGameOverride ? ` ${bestOutcome.rationale}` : ""}${contrastDetail}`;
+
+  renderStateLabActionOutcomes(outcomes, best);
+}
+
 function renderDice() {
+  if (!hasGameUI) {
+    return;
+  }
+
   elements.diceTray.innerHTML = "";
   if (state.currentRoll.length === 0) {
     const placeholder = document.createElement("p");
@@ -720,6 +1090,10 @@ function renderDice() {
 }
 
 function renderActions() {
+  if (!hasGameUI) {
+    return;
+  }
+
   elements.actionsList.innerHTML = "";
 
   if (state.pendingActions.length === 0) {
@@ -748,6 +1122,10 @@ function renderActions() {
 }
 
 function highlightActiveRows() {
+  if (!hasGameUI) {
+    return;
+  }
+
   document.querySelectorAll("[data-ev-row]").forEach((row) => {
     row.classList.remove("row-active");
   });
@@ -768,6 +1146,10 @@ function highlightActiveRows() {
 }
 
 function renderRecommendation() {
+  if (!hasGameUI) {
+    return;
+  }
+
   const rollEV = getRollValue(state.diceRemaining, state.turnTotal);
   const bankEV = state.turnTotal;
   const recommendRoll = rollEV > bankEV;
@@ -792,6 +1174,10 @@ function renderRecommendation() {
 }
 
 function renderOptimalAction() {
+  if (!hasGameUI) {
+    return;
+  }
+
   if (state.pendingActions.length === 0) {
     const plan = getContinuationPlan(state.currentPlayer, state.turnTotal, state.diceRemaining);
     const rollEV = getRollValue(state.diceRemaining, state.turnTotal);
@@ -835,6 +1221,10 @@ function renderOptimalAction() {
 }
 
 function render() {
+  if (!hasGameUI) {
+    return;
+  }
+
   elements.currentPlayer.textContent = getCurrentPlayerLabel();
   elements.humanScore.textContent = String(state.players.human);
   elements.cpuScore.textContent = String(state.players.cpu);
@@ -1085,34 +1475,68 @@ function onResetMatch() {
 }
 
 function initialize() {
-  state.busy = true;
-  setStatus("Building exact EV engine...");
-  render();
+  if (hasGameUI) {
+    state.busy = true;
+    setStatus("Building exact EV engine...");
+    render();
+  }
 
   setTimeout(() => {
     buildExactEVTables();
-    state.busy = false;
-    setStatus("Exact EV engine ready. Your turn.");
-    render();
+
+    if (hasGameUI) {
+      state.busy = false;
+      setStatus("Exact EV engine ready. Your turn.");
+      render();
+    }
+
+    if (hasStateLabUI) {
+      setStateLabStatus("Exact EV engine ready.");
+      runStateLab();
+    }
+
     runAdvisor();
   }, 0);
 }
 
-elements.rollBtn.addEventListener("click", onRollClick);
-elements.keepBtn.addEventListener("click", onKeepClick);
-elements.bankBtn.addEventListener("click", onBankClick);
-elements.resetBtn.addEventListener("click", onResetMatch);
+if (hasGameUI) {
+  elements.rollBtn.addEventListener("click", onRollClick);
+  elements.keepBtn.addEventListener("click", onKeepClick);
+  elements.bankBtn.addEventListener("click", onBankClick);
+  elements.resetBtn.addEventListener("click", onResetMatch);
+}
 
-[
-  elements.advisorYourScore,
-  elements.advisorOpponentScore,
-  elements.advisorTargetScore,
-  elements.advisorTurnTotal,
-  elements.advisorDiceRemaining,
-  elements.advisorOpponentsLastTurn,
-].forEach((input) => {
-  input.addEventListener("input", runAdvisor);
-  input.addEventListener("change", runAdvisor);
-});
+if (hasAdvisorUI) {
+  [
+    elements.advisorYourScore,
+    elements.advisorOpponentScore,
+    elements.advisorTargetScore,
+    elements.advisorTurnTotal,
+    elements.advisorDiceRemaining,
+    elements.advisorOpponentsLastTurn,
+  ].forEach((input) => {
+    input.addEventListener("input", runAdvisor);
+    input.addEventListener("change", runAdvisor);
+  });
+}
+
+if (hasStateLabUI) {
+  [
+    elements.stateLabYourScore,
+    elements.stateLabOpponentScore,
+    elements.stateLabTargetScore,
+    elements.stateLabTurnTotal,
+    elements.stateLabDiceRemaining,
+    elements.stateLabOpponentsLastTurn,
+    elements.stateLabRollState,
+    elements.stateLabCurrentRoll,
+  ].forEach((input) => {
+    input.addEventListener("input", runStateLab);
+    input.addEventListener("change", runStateLab);
+  });
+
+  syncStateLabRollField();
+  clearStateLabActions("Solver results will appear here once the EV engine is ready.");
+}
 
 initialize();

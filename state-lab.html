@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>State Lab | Farkle Lab</title>
+    <meta
+      name="description"
+      content="Evaluate custom Farkle game states, compare bank-versus-roll EV, and rank legal keeps for specific rolls."
+    />
+    <link rel="icon" href="icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="icon.svg" />
+    <link rel="manifest" href="site.webmanifest" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="layout layout-single">
+      <header class="app-header">
+        <div class="brand-lockup">
+          <img class="brand-icon" src="icon.svg" alt="" />
+          <div>
+            <p class="eyebrow">Exact EV Farkle</p>
+            <h1>State Lab</h1>
+          </div>
+        </div>
+
+        <nav class="page-nav" aria-label="Pages">
+          <a class="page-link" href="./">Play Lab</a>
+          <a class="page-link page-link-active" href="state-lab.html" aria-current="page">State Lab</a>
+        </nav>
+      </header>
+
+      <section class="surface state-lab-shell" aria-labelledby="state-lab-title">
+        <div class="state-lab-hero">
+          <div>
+            <p class="eyebrow">Custom Analysis</p>
+            <h2 id="state-lab-title">Evaluate Any Turn State</h2>
+            <p class="state-lab-intro">
+              Use the same exact EV engine as the main app to analyze both unrolled decisions and
+              specific rolled states. Enter the scores, round total, remaining dice, and current
+              roll when you want the solver to rank every legal keep.
+            </p>
+          </div>
+
+          <span id="state-lab-status" class="status-pill">Building exact EV engine...</span>
+        </div>
+
+        <div class="state-lab-grid">
+          <section class="solver-block state-lab-form-block" aria-labelledby="state-lab-inputs-title">
+            <div class="section-heading">
+              <h3 id="state-lab-inputs-title">Scenario Inputs</h3>
+              <p class="hint">Rolled mode expects the visible dice from the current throw.</p>
+            </div>
+
+            <div class="advisor-grid state-lab-grid-fields">
+              <label>
+                Your Score
+                <input id="state-lab-your-score" type="number" min="0" step="100" value="0" />
+              </label>
+              <label>
+                Opponent Score
+                <input id="state-lab-opponent-score" type="number" min="0" step="100" value="0" />
+              </label>
+              <label>
+                Target Score
+                <input id="state-lab-target-score" type="number" min="1000" step="500" value="10000" />
+              </label>
+              <label>
+                Round Score
+                <input id="state-lab-turn-total" type="number" min="0" step="50" value="0" />
+              </label>
+              <label>
+                Dice Left
+                <select id="state-lab-dice-remaining">
+                  <option value="1">1</option>
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                  <option value="4">4</option>
+                  <option value="5">5</option>
+                  <option value="6" selected>6</option>
+                </select>
+              </label>
+              <label>
+                State
+                <select id="state-lab-roll-state">
+                  <option value="unrolled" selected>Unrolled</option>
+                  <option value="rolled">Rolled</option>
+                </select>
+              </label>
+              <label class="state-lab-roll-field">
+                Current Roll
+                <input
+                  id="state-lab-current-roll"
+                  type="text"
+                  inputmode="numeric"
+                  autocomplete="off"
+                  spellcheck="false"
+                  placeholder="Example: 1 5 5 2"
+                />
+                <span class="field-note">Use spaces or commas, like 1 5 5 2 or 1,5,5,2.</span>
+              </label>
+              <label class="advisor-checkbox">
+                <input id="state-lab-opponents-last-turn" type="checkbox" checked />
+                <span>Opponent gets a final turn after you bank to target</span>
+              </label>
+            </div>
+          </section>
+
+          <section class="solver-block state-lab-output-block" aria-labelledby="state-lab-results-title">
+            <div class="section-heading">
+              <h3 id="state-lab-results-title">Solver Output</h3>
+              <p class="hint">The top line gives the recommended move for the exact state you entered.</p>
+            </div>
+
+            <div id="state-lab-result" class="result-panel result-panel-warning">
+              <h4>Recommendation</h4>
+              <p id="state-lab-recommendation">Waiting for the solver.</p>
+              <p id="state-lab-details" class="hint">Exact EV tables are loading.</p>
+            </div>
+
+            <div class="section-heading state-lab-actions-heading">
+              <h3>Legal Actions</h3>
+              <p class="hint">In rolled mode, the strongest strategic keep is highlighted.</p>
+            </div>
+
+            <div id="state-lab-actions" class="actions-list state-lab-actions"></div>
+          </section>
+        </div>
+      </section>
+
+      <p class="site-signoff">
+        Elsewhere:
+        <a href="https://maxwellmetzner.github.io" target="_blank" rel="noopener noreferrer">
+          maxwellmetzner.github.io
+        </a>
+      </p>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>

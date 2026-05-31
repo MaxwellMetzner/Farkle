@@ -7,7 +7,8 @@ Farkle Lab is a static browser-based Farkle app that lets you play a full game w
 - Runs a full 6-dice Farkle game in the browser with a human player and a CPU opponent.
 - Shows the legal scoring choices for each roll and highlights the strongest scoring keep available.
 - Precomputes exact expected-value tables for 1 through 6 dice so the app can compare rolling versus banking.
-- Includes a Game State Advisor where you can plug in custom scores, turn totals, and dice counts to get a recommendation.
+- Includes an in-game Game State Advisor for quick late-turn checks.
+- Adds a dedicated State Lab page where you can enter custom scores, turn totals, dice counts, and specific rolled dice to evaluate legal keeps.
 - Surfaces late-game pressure guidance so you can see when chasing a bigger turn is worth it.
 
 ## Technologies used
